@@ -3,7 +3,7 @@
 Make sure you have [Docker Engine](https://docs.docker.com/engine/install/) installed first
 
 ```shell
-docker run --name some-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password -d postgres
+docker run --name rest_python -p 5432:5432 -e POSTGRES_PASSWORD=password -d postgres
 ```
 
 ```shell
