@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Boolean, func, Table
 from sqlalchemy.orm import relationship, mapped_column, Mapped, DeclarativeBase
-from sqlalchemy.sql.schema import ForeignKey, PrimaryKeyConstraint
+from sqlalchemy.sql.schema import ForeignKey, PrimaryKeyConstraint, UniqueConstraint
 from sqlalchemy.sql.sqltypes import DateTime
 
 
@@ -34,9 +34,28 @@ class Note(Base):
     tags: Mapped[list["Tag"]] = relationship(
         "Tag", secondary=note_m2m_tag, backref="notes"
     )
+    user_id = Column(
+        "user_id", ForeignKey("users.id", ondelete="CASCADE"), default=None
+    )
+    user = relationship("User", backref="notes")
 
 
 class Tag(Base):
     __tablename__ = "tags"
+    __table_args__ = (UniqueConstraint("name", "user_id", name="unique_tag_user"),)
     id: Mapped[int] = Column(Integer, primary_key=True)
-    name: Mapped[str] = Column(String(25), nullable=False, unique=True)
+    name: Mapped[str] = Column(String(25), nullable=False)
+    user_id = Column(
+        "user_id", ForeignKey("users.id", ondelete="CASCADE"), default=None
+    )
+    user = relationship("User", backref="tags")
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    email = Column(String, unique=True)
+    hashed_password = Column(String)
+    created_at = Column(DateTime, default=func.now())
+    avatar = Column(String(255), nullable=True)
