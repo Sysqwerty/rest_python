@@ -1,7 +1,5 @@
 # rest_python
 
-Make sure you have [Docker Engine](https://docs.docker.com/engine/install/) installed first
-
 ```shell
 poetry install
 ```
