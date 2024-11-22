@@ -1,73 +1,71 @@
-import logging
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-import re
-from ipaddress import ip_address
-from typing import Callable
-
-from fastapi import FastAPI, Request, status
-from starlette.responses import JSONResponse
-from slowapi.errors import RateLimitExceeded
-from src.api import tags, utils, notes, auth, users
-
-logger = logging.getLogger("rate_limiter")
+from models import User
+from schemas import UserCreate, UserModel
+from auth import (
+    get_user,
+    get_password_hash,
+    authenticate_user,
+    create_access_token,
+    get_current_moderator_user,
+    get_current_admin_user,
+)
+from database import get_db
 
 app = FastAPI()
 
-# banned_ips = [
-#     ip_address("192.168.1.1"),
-#     ip_address("192.168.1.2"),
-#     ip_address("127.0.0.2"),
-# ]
 
-allowed_ips = [
-    ip_address('192.168.1.0'),
-    ip_address('172.16.0.0'),
-    ip_address("127.0.0.1")
-]
-
-user_agent_ban_list = [r"Gecko2", r"Python-urllib"]
-
-
-@app.middleware("http")
-async def limit_access_by_ip(request: Request, call_next: Callable):
-    ip = ip_address(request.client.host)
-    # if ip in banned_ips:
-    #     return JSONResponse(
-    #         status_code=status.HTTP_403_FORBIDDEN, content={"detail": "You are banned"}
-    #     )
-    if ip not in allowed_ips:
-        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Not allowed IP address"})
-    response = await call_next(request)
-
-    return response
-
-
-@app.middleware("http")
-async def user_agent_ban_middleware(request: Request, call_next: Callable):
-    user_agent = request.headers.get("user-agent")
-    for ban_pattern in user_agent_ban_list:
-        if re.search(ban_pattern, user_agent):
-            return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "You are banned"})
-    response = await call_next(request)
-    return response
-
-
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    logger.warning(f"Rate limit exceeded for '{request.client.host}' host.")
-    return JSONResponse(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        content={"error": "Перевищено ліміт запитів. Спробуйте пізніше."},
+# Маршрут для реєстрації користувача
+@app.post("/register", response_model=UserModel)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = get_user(db, user.username)
+    if db_user:
+        raise HTTPException(
+            status_code=400, detail="Користувач з таким іменем вже існує"
+        )
+    hashed_password = get_password_hash(user.password)
+    new_user = User(
+        username=user.username, hashed_password=hashed_password, role=user.role
     )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
 
-app.include_router(utils.router, prefix="/api")
-app.include_router(tags.router, prefix="/api")
-app.include_router(notes.router, prefix="/api")
-app.include_router(auth.router, prefix="/api")
-app.include_router(users.router, prefix="/api")
+# Маршрут для отримання токена
+@app.post("/token")
+def login_for_access_token(
+        db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Неправильне ім'я користувача або пароль",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
-if __name__ == "__main__":
-    import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+# Перший маршрут - доступний для всіх
+@app.get("/public")
+def read_public():
+    return {"message": "Це публічний маршрут, доступний для всіх"}
+
+
+# Другий маршрут - для модераторів та адміністраторів
+@app.get("/moderator")
+def read_moderator(current_user: User = Depends(get_current_moderator_user)):
+    return {
+        "message": f"Вітаємо, {current_user.username}! Це маршрут для модераторів та адміністраторів"
+    }
+
+
+# Третій маршрут - тільки для адміністраторів
+@app.get("/admin")
+def read_admin(current_user: User = Depends(get_current_admin_user)):
+    return {"message": f"Вітаємо, {current_user.username}! Це адміністративний маршрут"}

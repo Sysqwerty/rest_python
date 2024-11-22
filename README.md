@@ -3,11 +3,7 @@
 Make sure you have [Docker Engine](https://docs.docker.com/engine/install/) installed first
 
 ```shell
-docker-compose up -d
-```
-
-```shell
-alembic upgrade head
+poetry install
 ```
 
 ```shell
