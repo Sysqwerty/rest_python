@@ -1,4 +1,8 @@
 import logging
+
+from ipaddress import ip_address
+from typing import Callable
+
 from fastapi import FastAPI, Request, status
 from starlette.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -7,6 +11,32 @@ from src.api import tags, utils, notes, auth, users
 logger = logging.getLogger("rate_limiter")
 
 app = FastAPI()
+
+# banned_ips = [
+#     ip_address("192.168.1.1"),
+#     ip_address("192.168.1.2"),
+#     ip_address("127.0.0.2"),
+# ]
+
+allowed_ips = [
+    ip_address('192.168.1.0'),
+    ip_address('172.16.0.0'),
+    ip_address("127.0.0.1")
+]
+
+
+@app.middleware("http")
+async def limit_access_by_ip(request: Request, call_next: Callable):
+    ip = ip_address(request.client.host)
+    # if ip in banned_ips:
+    #     return JSONResponse(
+    #         status_code=status.HTTP_403_FORBIDDEN, content={"detail": "You are banned"}
+    #     )
+    if ip not in allowed_ips:
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Not allowed IP address"})
+    response = await call_next(request)
+
+    return response
 
 
 @app.exception_handler(RateLimitExceeded)
