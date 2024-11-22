@@ -1,8 +1,15 @@
-class Config:
-    DB_URL = "postgresql+asyncpg://postgres:password@localhost:5432/postgres"
-    JWT_SECRET = "secret_key"  # Секретний ключ для токенів
-    JWT_ALGORITHM = "HS256"  # Алгоритм шифрування токенів
-    JWT_EXPIRATION_SECONDS = 3600  # Час дії токена (1 година)
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 
-config = Config
+class Settings(BaseSettings):
+    DB_URL: str
+    JWT_SECRET: str
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_SECONDS: int = 3600
+    model_config = ConfigDict(
+        extra="ignore", env_file=".env", env_file_encoding="utf-8", case_sensitive=True
+    )
+
+
+settings = Settings()
