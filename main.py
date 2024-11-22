@@ -1,8 +1,22 @@
-from fastapi import FastAPI
-
+import logging
+from fastapi import FastAPI, Request, status
+from starlette.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from src.api import tags, utils, notes, auth, users
 
+logger = logging.getLogger("rate_limiter")
+
 app = FastAPI()
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded for '{request.client.host}' host.")
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"error": "Перевищено ліміт запитів. Спробуйте пізніше."},
+    )
+
 
 app.include_router(utils.router, prefix="/api")
 app.include_router(tags.router, prefix="/api")
