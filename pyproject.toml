@@ -17,6 +17,7 @@ libgravatar = "^1.0.4"
 python-dotenv = "^1.0.1"
 pydantic-settings = "^2.6.1"
 slowapi = "^0.1.9"
+fastapi-mail = "^1.4.2"
 
 
 [build-system]

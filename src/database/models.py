@@ -59,3 +59,4 @@ class User(Base):
     hashed_password = Column(String)
     created_at = Column(DateTime, default=func.now())
     avatar = Column(String(255), nullable=True)
+    confirmed = Column(Boolean, default=False)
