@@ -2,23 +2,23 @@
 
 Make sure you have [Docker Engine](https://docs.docker.com/engine/install/) installed first
 
-```shell
+```bash
 poetry shell
 ```
 
-```shell
+```bash
 poetry install
 ```
 
-```shell
+```bash
 docker-compose up -d
 ```
 
-```shell
+```bash
 alembic upgrade head
 ```
 
-```shell
+```bash
 fastapi dev main.py
 ```
 
