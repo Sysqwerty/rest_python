@@ -13,11 +13,11 @@ logger = logging.getLogger("rate_limiter")
 
 app = FastAPI()
 
-# banned_ips = [
-#     ip_address("192.168.1.1"),
-#     ip_address("192.168.1.2"),
-#     ip_address("127.0.0.2"),
-# ]
+banned_ips = [
+    ip_address("192.168.1.1"),
+    ip_address("192.168.1.2"),
+    ip_address("127.0.0.2"),
+]
 
 allowed_ips = [
     ip_address('192.168.1.0'),
@@ -30,7 +30,17 @@ user_agent_ban_list = [r"Gecko2", r"Python-urllib"]
 
 @app.middleware("http")
 async def limit_access_by_ip(request: Request, call_next: Callable):
-    ip = ip_address(request.client.host)
+    try:
+        # Перевіряємо, чи значення host — це IP
+        print(f"request.client.host: {request.client.host}")
+        ip = ip_address(request.client.host)
+    except ValueError:
+        # Якщо це не IP, підставляємо дефолтний localhost для тестів
+        if request.client.host == "testclient":
+            ip = ip_address("127.0.0.1")
+        else:
+            raise ValueError(f"{request.client.host!r} does not appear to be an IPv4 or IPv6 address")
+    # print(f"\nIP address: {ip}")
     # if ip in banned_ips:
     #     return JSONResponse(
     #         status_code=status.HTTP_403_FORBIDDEN, content={"detail": "You are banned"}

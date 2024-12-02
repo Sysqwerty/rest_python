@@ -10,17 +10,26 @@ python = "^3.10"
 asyncpg = "^0.30.0"
 sqlalchemy = "^2.0.36"
 alembic = "^1.14.0"
-fastapi = {extras = ["standard"], version = "^0.115.5"}
-python-jose = {extras = ["cryptography"], version = "^3.3.0"}
-passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+fastapi = { extras = ["standard"], version = "^0.115.5" }
+python-jose = { extras = ["cryptography"], version = "^3.3.0" }
+passlib = { extras = ["bcrypt"], version = "^1.7.4" }
 libgravatar = "^1.0.4"
 python-dotenv = "^1.0.1"
 pydantic-settings = "^2.6.1"
 slowapi = "^0.1.9"
 fastapi-mail = "^1.4.2"
 cloudinary = "^1.41.0"
+pytest = "^8.3.4"
+pytest-asyncio = "^0.24.0"
+aiosqlite = "^0.20.0"
+pytest-cov = "^6.0.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "."
+filterwarnings = "ignore::DeprecationWarning"
+asyncio_default_fixture_loop_scope = "function"
